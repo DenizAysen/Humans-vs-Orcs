@@ -1,28 +1,29 @@
 using UnityEngine;
 
-public class GameManagger : MonoBehaviour
+public class GameManagger : SingletonManagger<GameManagger>
 {
-    protected virtual void Awake()
+    private Vector2 _initialTouchPosition;
+    private void Update()
     {
-        GameManagger[] managers = FindObjectsByType<GameManagger>(FindObjectsSortMode.None);
-        if (managers.Length > 1)
+        Vector2 inputPosition = Input.touchCount > 0 ? Input.GetTouch(0).position : Input.mousePosition;
+
+        if (Input.GetMouseButtonDown(0) || (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began))
         {
-            Destroy(gameObject);
-            return;
+            _initialTouchPosition = inputPosition;
+        }
+
+        if (Input.GetMouseButtonUp(0) || (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Ended))
+        {
+            if(Vector2.Distance(_initialTouchPosition, inputPosition) < 10)
+            {
+                DetectClick(inputPosition);
+            }
+
         }
     }
 
-    public static GameManagger Get()
+    void DetectClick(Vector2 inputPosition)
     {
-        var tag = nameof(GameManagger);
-        GameObject managerObject = GameObject.FindWithTag(tag);
-        if (managerObject != null)
-        {
-            return managerObject.GetComponent<GameManagger>();
-        }
-
-        GameObject go = new(tag);
-        go.tag = tag;
-        return go.AddComponent<GameManagger>();
+        Debug.Log(inputPosition);
     }
 }

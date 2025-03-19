@@ -1,16 +1,28 @@
 using UnityEngine;
 
-public class SingletonManager : MonoBehaviour
+public abstract class SingletonManagger<T> : MonoBehaviour where T : MonoBehaviour
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    protected virtual void Awake()
     {
-        
+        T[] managers = FindObjectsByType<T>(FindObjectsSortMode.None);
+        if (managers.Length > 1)
+        {
+            Destroy(gameObject);
+            return;
+        }
     }
 
-    // Update is called once per frame
-    void Update()
+    public static T Get()
     {
-        
+        var tag = typeof(T).Name;
+        GameObject managerObject = GameObject.FindWithTag(tag);
+        if (managerObject != null)
+        {
+            return managerObject.GetComponent<T>();
+        }
+
+        GameObject go = new(tag);
+        go.tag = tag;
+        return go.AddComponent<T>();
     }
 }
