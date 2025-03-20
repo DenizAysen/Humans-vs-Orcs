@@ -2,7 +2,19 @@ using UnityEngine;
 
 public class GameManagger : SingletonManagger<GameManagger>
 {
+    public Unit ActiveUnit;
+
     private Vector2 _initialTouchPosition;
+
+    private Vector2 _worldPos;
+
+    private Camera _mainCamera;
+
+    public bool HasActiveUnit => ActiveUnit != null;
+    private void Start()
+    {
+        _mainCamera = Camera.main;
+    }
     private void Update()
     {
         Vector2 inputPosition = Input.touchCount > 0 ? Input.GetTouch(0).position : Input.mousePosition;
@@ -24,6 +36,44 @@ public class GameManagger : SingletonManagger<GameManagger>
 
     void DetectClick(Vector2 inputPosition)
     {
-        Debug.Log(inputPosition);
+        _worldPos = _mainCamera.ScreenToWorldPoint(inputPosition);
+        RaycastHit2D hit = Physics2D.Raycast(_worldPos, Vector2.zero);
+
+        if(HasClickedOnUnit(hit , out var Unit))
+        {
+            HandleClickOnUnit(Unit);
+        }
+        else
+        {
+            HandleClickOnGround(_worldPos);
+        }
     }
+    private bool HasClickedOnUnit(RaycastHit2D hit, out Unit unit)
+    {
+        if(hit.collider != null && hit.collider.TryGetComponent<Unit>(out var clickedUnit))
+        {
+            unit = clickedUnit;
+            return true;
+        }
+        unit = null;
+        return false;   
+    }
+    void HandleClickOnGround(Vector2 worldPoint)
+    {
+        ActiveUnit.MoveTo(worldPoint);
+    }
+    void HandleClickOnUnit(Unit unit)
+    {
+        SelectNewUnit(unit);
+    }
+    void SelectNewUnit(Unit unit)
+    {
+        if(HasActiveUnit)
+        {
+            ActiveUnit.DeSelect();
+        }
+        ActiveUnit = unit;
+        ActiveUnit.Select();
+    }
+
 }

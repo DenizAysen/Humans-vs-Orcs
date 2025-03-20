@@ -9,7 +9,7 @@ public class AIPawn : MonoBehaviour
     public Vector3? Destination => _m_Destination;
     private void Start()
     {
-        SetDestination(new Vector3(4f, 2f, 0f));
+        //SetDestination(new Vector3(4f, 2f, 0f));
     }
     private void Update()
     {
