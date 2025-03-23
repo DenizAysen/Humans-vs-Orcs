@@ -1,8 +1,17 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class GameManagger : SingletonManagger<GameManagger>
 {
+    [Header("UI")]
+    [SerializeField] PointtoClick pointtoClickPrefab;
+    [SerializeField] ActionBar actionBar;
+
     public Unit ActiveUnit;
+
+    public Vector2 InputPositon => Input.touchCount > 0 ? Input.GetTouch(0).position : Input.mousePosition;
+    public bool IsLeftClickOrTapDown => Input.GetMouseButtonDown(0) || (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began);
+    public bool IsLeftClickOrTapUp => Input.GetMouseButtonUp(0) || (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Ended);
 
     private Vector2 _initialTouchPosition;
 
@@ -14,21 +23,22 @@ public class GameManagger : SingletonManagger<GameManagger>
     private void Start()
     {
         _mainCamera = Camera.main;
+        ClearActionBarUI();
     }
     private void Update()
     {
-        Vector2 inputPosition = Input.touchCount > 0 ? Input.GetTouch(0).position : Input.mousePosition;
+        
 
-        if (Input.GetMouseButtonDown(0) || (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began))
+        if (IsLeftClickOrTapDown)
         {
-            _initialTouchPosition = inputPosition;
+            _initialTouchPosition = InputPositon;
         }
 
-        if (Input.GetMouseButtonUp(0) || (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Ended))
+        if (IsLeftClickOrTapUp)
         {
-            if(Vector2.Distance(_initialTouchPosition, inputPosition) < 10)
+            if(Vector2.Distance(_initialTouchPosition, InputPositon) < 5)
             {
-                DetectClick(inputPosition);
+                DetectClick(InputPositon);
             }
 
         }
@@ -36,6 +46,9 @@ public class GameManagger : SingletonManagger<GameManagger>
 
     void DetectClick(Vector2 inputPosition)
     {
+        if(IsPointerOverUIElement())
+            return;
+
         _worldPos = _mainCamera.ScreenToWorldPoint(inputPosition);
         RaycastHit2D hit = Physics2D.Raycast(_worldPos, Vector2.zero);
 
@@ -60,11 +73,24 @@ public class GameManagger : SingletonManagger<GameManagger>
     }
     void HandleClickOnGround(Vector2 worldPoint)
     {
-        ActiveUnit.MoveTo(worldPoint);
+        if(HasActiveUnit && IsHumanoid(ActiveUnit))
+        {
+            ActiveUnit.MoveTo(worldPoint);
+            DisplayClickEffect(worldPoint);
+        }      
     }
     void HandleClickOnUnit(Unit unit)
     {
+        if (HasActiveUnit)
+        {
+            if (HasClickedOnActiveUnit(unit))
+            {
+                CancelActiveUnit();
+                return;
+            }
+        }
         SelectNewUnit(unit);
+
     }
     void SelectNewUnit(Unit unit)
     {
@@ -74,6 +100,58 @@ public class GameManagger : SingletonManagger<GameManagger>
         }
         ActiveUnit = unit;
         ActiveUnit.Select();
+        ShowUnitActions();
+    }
+    bool HasClickedOnActiveUnit(Unit clickedUnit)
+    {
+        return clickedUnit == ActiveUnit;
+    }
+    bool IsHumanoid(Unit unit)
+    {
+        return unit is HumanoidUnit;
+    }
+    void CancelActiveUnit()
+    {
+        ActiveUnit.DeSelect();
+        ActiveUnit = null;
+
+
+        ClearActionBarUI();
+    }
+    void DisplayClickEffect(Vector2 worldPoint)
+    {
+        Instantiate(pointtoClickPrefab, (Vector3)worldPoint, Quaternion.identity);
     }
 
+    void ShowUnitActions()
+    {
+        ClearActionBarUI();
+
+        var hardCodedActions = 2;
+
+        for (int i = 0; i < hardCodedActions; i++)
+        {
+            actionBar.RegisterAction();
+        }
+
+        actionBar.Show();
+    }
+    void ClearActionBarUI()
+    {
+        actionBar.ClearActions();
+        actionBar.Hide();
+    }
+
+    bool IsPointerOverUIElement()
+    {
+        if(Input.touchCount > 0)
+        {
+            var touch = Input.GetTouch(0);
+            return EventSystem.current.IsPointerOverGameObject(touch.fingerId);
+        }
+        else
+        {
+            return EventSystem.current.IsPointerOverGameObject();
+        }
+    }
 }
