@@ -15,6 +15,8 @@ public class GameManagger : SingletonManagger<GameManagger>
 
     private Vector2 _initialTouchPosition;
 
+    private PlacementProcess _placementProcess;
+
     private Vector2 _worldPos;
 
     private Camera _mainCamera;
@@ -27,23 +29,32 @@ public class GameManagger : SingletonManagger<GameManagger>
     }
     private void Update()
     {
-        
-
-        if (IsLeftClickOrTapDown)
+        if(_placementProcess != null)
         {
-            _initialTouchPosition = InputPositon;
+            _placementProcess.Update();
         }
-
-        if (IsLeftClickOrTapUp)
+        else
         {
-            if(Vector2.Distance(_initialTouchPosition, InputPositon) < 5)
+            if (IsLeftClickOrTapDown)
             {
-                DetectClick(InputPositon);
+                _initialTouchPosition = InputPositon;
             }
 
+            if (IsLeftClickOrTapUp)
+            {
+                if (Vector2.Distance(_initialTouchPosition, InputPositon) < 5)
+                {
+                    DetectClick(InputPositon);
+                }
+            }
         }
+       
     }
-
+    public void StartBuildProcess(BuildActionSO buildActionSO)
+    {
+        _placementProcess = new PlacementProcess(buildActionSO);
+        _placementProcess.ShowPLacementOutline();
+    }
     void DetectClick(Vector2 inputPosition)
     {
         if(IsPointerOverUIElement())
@@ -100,7 +111,7 @@ public class GameManagger : SingletonManagger<GameManagger>
         }
         ActiveUnit = unit;
         ActiveUnit.Select();
-        ShowUnitActions();
+        ShowUnitActions(unit);
     }
     bool HasClickedOnActiveUnit(Unit clickedUnit)
     {
@@ -123,18 +134,22 @@ public class GameManagger : SingletonManagger<GameManagger>
         Instantiate(pointtoClickPrefab, (Vector3)worldPoint, Quaternion.identity);
     }
 
-    void ShowUnitActions()
+    void ShowUnitActions(Unit unit)
     {
         ClearActionBarUI();
 
-        var hardCodedActions = 2;
-
-        for (int i = 0; i < hardCodedActions; i++)
+        if(unit.Actions.Length == 0)
         {
-            actionBar.RegisterAction();
+            return;
         }
 
         actionBar.Show();
+
+        foreach(var action in unit.Actions)
+        {
+            actionBar.RegisterAction(action.Icon,
+                () => action.Execute(this));
+        }
     }
     void ClearActionBarUI()
     {

@@ -2,6 +2,8 @@ using UnityEngine;
 
 public abstract class Unit : MonoBehaviour
 {
+    [SerializeField] ActionSO[] actions;
+
     public bool IsMoving;
 
     public bool IsTargeted;
@@ -15,6 +17,8 @@ public abstract class Unit : MonoBehaviour
     protected Material _originalMaterial;
 
     protected Material _highlightMaterial;
+
+    public ActionSO[] Actions => actions;
     protected void Awake()
     {
         m_Animator = GetComponent<Animator>();
