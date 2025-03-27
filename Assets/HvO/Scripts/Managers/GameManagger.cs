@@ -9,12 +9,6 @@ public class GameManagger : SingletonManagger<GameManagger>
 
     public Unit ActiveUnit;
 
-    public Vector2 InputPositon => Input.touchCount > 0 ? Input.GetTouch(0).position : Input.mousePosition;
-    public bool IsLeftClickOrTapDown => Input.GetMouseButtonDown(0) || (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began);
-    public bool IsLeftClickOrTapUp => Input.GetMouseButtonUp(0) || (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Ended);
-
-    private Vector2 _initialTouchPosition;
-
     private PlacementProcess _placementProcess;
 
     private Vector2 _worldPos;
@@ -33,20 +27,9 @@ public class GameManagger : SingletonManagger<GameManagger>
         {
             _placementProcess.Update();
         }
-        else
+        else if (HvoUtils.TryGetShortClickPosition(out Vector2 _worldPos))
         {
-            if (IsLeftClickOrTapDown)
-            {
-                _initialTouchPosition = InputPositon;
-            }
-
-            if (IsLeftClickOrTapUp)
-            {
-                if (Vector2.Distance(_initialTouchPosition, InputPositon) < 5)
-                {
-                    DetectClick(InputPositon);
-                }
-            }
+            DetectClick(_worldPos);
         }
        
     }
@@ -57,7 +40,7 @@ public class GameManagger : SingletonManagger<GameManagger>
     }
     void DetectClick(Vector2 inputPosition)
     {
-        if(IsPointerOverUIElement())
+        if(HvoUtils.IsPointerOverUIElement())
             return;
 
         _worldPos = _mainCamera.ScreenToWorldPoint(inputPosition);
@@ -155,18 +138,5 @@ public class GameManagger : SingletonManagger<GameManagger>
     {
         actionBar.ClearActions();
         actionBar.Hide();
-    }
-
-    bool IsPointerOverUIElement()
-    {
-        if(Input.touchCount > 0)
-        {
-            var touch = Input.GetTouch(0);
-            return EventSystem.current.IsPointerOverGameObject(touch.fingerId);
-        }
-        else
-        {
-            return EventSystem.current.IsPointerOverGameObject();
-        }
     }
 }
